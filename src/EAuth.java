@@ -1,5 +1,5 @@
 public enum EAuth {
-    Authorized(0), Pending(1), NotAuthorized(2), Unauthorized(3);
+    Authorized(0), AuthRequested(1), PairRequested(2), RequestingPair(3), NotAuthorized(5), Unauthorized(6);
 
     private int value;
 

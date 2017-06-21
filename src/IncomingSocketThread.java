@@ -1,4 +1,6 @@
 import Parser.Block.CBlock;
+import Parser.Block.CPairingBlock;
+import Parser.Block.EMethodType;
 import Parser.Block.UnknownBlockException;
 
 import java.io.IOException;
@@ -12,13 +14,9 @@ import java.util.*;
 
 public class IncomingSocketThread extends Thread {
 
-    String TAG = "IncomingSocketThread: ";
+    private String TAG = "IncomingSocketThread: ";
 
-    protected Vector<SocketAddress> mAddresses;
-
-    private final static int MAX_DATA_SIZE = 0x2000;
-    private final static int MAX_HEAD_SIZE = 8;
-    private final static int MAX_BLOCK_SIZE = MAX_DATA_SIZE + MAX_HEAD_SIZE;
+    private Vector<SocketAddress> mAddresses;
 
     private boolean mCancel = false;
 
@@ -57,24 +55,55 @@ public class IncomingSocketThread extends Thread {
                         if (sc != null) {
                             sc.configureBlocking(false);
                             sc.socket().setTcpNoDelay(true);
-                            sc.register(selector, SelectionKey.OP_READ, EAuth.NotAuthorized);
-                            // check ID Authorization status (using DNS-SD IP lookup) --> YES? (interface call)
-                            // requestAuth(sc);
-                            // check ID Blacklist (using DNS-SD IP Lookup) --> (Blacklisted = NO)? (interface call)
-                            // sendPairingRequest(sc);
-                            // else
-                            // register as Unauthorized and report to application (interface call)
+                            // check auth status using DNS-SD id
+                            EAuth auth = checkAuthorization(sc.socket());
+                            switch (auth) {
+                                case Authorized:
+                                    // might be interface call
+                                    sc.register(selector, SelectionKey.OP_READ, EAuth.AuthRequested);
+                                    requestAuth(sc);
+                                    break;
+                                case NotAuthorized:
+                                    // might be interface call
+                                    sc.register(selector, SelectionKey.OP_READ, EAuth.NotAuthorized);
+                                    break;
+                                case Unauthorized:
+                                    sc.register(selector, SelectionKey.OP_READ, EAuth.Unauthorized);
+                                    reportUnauthorized(sc.socket());
+                                    break;
+                                default:
+                                    // just accept the connection, don't change the auth
+                                    sc.register(selector, SelectionKey.OP_READ, auth);
+                                    break;
+                            }
                         }
                         it.remove();
                     }
                     if (key.isReadable() && key.channel() instanceof SocketChannel) {
                         // handle incoming data
+                        SocketChannel sc = (SocketChannel) key.channel();
                         switch ((EAuth) key.attachment()) {
                             case Authorized:
-                                onIncomingData((SocketChannel) key.channel());
+                                ByteBuffer buffer = onIncomingData(sc);
+                                if (buffer != null) {
+                                    readBuffer(sc, buffer);
+                                }
+                                it.remove();
+                                break;
+                            case AuthRequested:
+                                if (verifyAuth(sc)) { // reads block and sends to interface to verify
+                                    sc.register(selector, SelectionKey.OP_READ, EAuth.Authorized);
+                                    respondAuth(sc);
+                                }
                                 it.remove();
                                 break;
                             case NotAuthorized:
+                                buffer = onIncomingData(sc);
+                                if (buffer != null && CBlock.factory(buffer) instanceof CPairingBlock) {
+                                    sc.register(selector, SelectionKey.OP_READ, EAuth.AuthRequested);
+                                    readPairBuffer(sc, buffer);
+
+                                }
                                 // contains authorization information (authorization value or pairing value)
                                 // set the EAuth of the key accordingly in this call
                                 // pair_info = Pending (and send pairing response), auth_info = Authorized, else = Unauthorized
@@ -82,10 +111,13 @@ public class IncomingSocketThread extends Thread {
                                 // todo and we will not change the EAuth attachment for the key here
                                 it.remove();
                                 break;
-                            case Pending:
+                            case RequestingPair:
                                 // contains pairing information
                                 // todo possibly EAuth will have more values to correctly specify the status (AuthRequested, PairRequested)
                                 // todo and we will not change the EAuth attachment for the key here
+                                it.remove();
+                                break;
+                            case PairRequested:
                                 it.remove();
                                 break;
                             case Unauthorized:
@@ -122,50 +154,61 @@ public class IncomingSocketThread extends Thread {
 
     }
 
-    void onIncomingData(SocketChannel sc) {
-        ByteBuffer block = mClientBuffers.get(sc.socket());
-        if (block == null) {
+
+    private ByteBuffer onIncomingData(SocketChannel sc) {
+        ByteBuffer buffer = mClientBuffers.get(sc.socket());
+        if (buffer == null) {
             // allocate new buffer
-            ByteBuffer newBlock = ByteBuffer.allocate(MAX_BLOCK_SIZE);
+            ByteBuffer newBlock = ByteBuffer.allocate(Constants.MAX_BLOCK_SIZE);
             mClientBuffers.put(sc.socket(), newBlock);
             mDiscardClients.put(sc.socket(), false);
-            block = newBlock;
+            buffer = newBlock;
         }
 
         int bytesRead;
 
         try {
-            bytesRead = sc.read(block);
+            bytesRead = sc.read(buffer);
         } catch (IOException e) {
             try { sc.close(); } catch (IOException ignored) {}
-            return;
+            return null;
         }
         if (bytesRead == -1) {
             try { sc.close(); } catch (IOException ignored) {}
-            return;
+            return null;
         }
-
-        readBuffer(sc, block);
+        return  buffer;
     }
 
-    void readBuffer(SocketChannel sc, ByteBuffer buffer) {
+    private void readBuffer(SocketChannel sc, ByteBuffer buffer) {
         boolean discard = mDiscardClients.get(sc.socket());
 
         try {
-            CBlock block = CBlock.initBlock(buffer); // UnknownBlockException might be thrown here
+            CBlock block = CBlock.factory(buffer); // UnknownBlockException might be thrown here
             block.read(buffer);                      // or here depending on data size
             if (discard) {
                 mDiscardClients.put(sc.socket(), false);
             }
             while (buffer.hasRemaining()) {
-                block = CBlock.initBlock(buffer); // UnknownBlockException might be thrown here
+                block = CBlock.factory(buffer); // UnknownBlockException might be thrown here
                 block.read(buffer);               // or here depending on data size
 
                 // interface call here to deliver the block and the socket to the block decoder thread
             }
+            if (!buffer.hasRemaining()) {
+                buffer.flip();
+                while (buffer.hasRemaining()) {
+                    block = CBlock.factory(buffer); // UnknownBlockException might be thrown here
+                    block.read(buffer);               // or here depending on data size
+
+                    // interface call here to deliver the block and the socket to the block decoder thread
+                }
+                buffer.clear();
+                mDiscardClients.put(sc.socket(), true);
+            }
         } catch (UnknownBlockException ube) {
-            Log.wtf(TAG, ube.getMessage() + "[ID: 0x" + String.format("%02X ", ube.getBlockType().v()) + "]");
-            // an unknown block always contains either MAX_BLOCK_LENGTH or or buffer.remaining() number of bytes
+            Log.wtf(TAG, ube.getMessage() + "[TypeID: 0x" + String.format("%02X ", ube.getBlockType().v()) + "]");
+            // an unknown block always contains either MAX_BLOCK_LENGTH or buffer.remaining() number of bytes
             // an unknown block will not be read after identification which is done while initializing the block
             // a known block can still be unknown if the header is not defined correctly (wrong header type, data length or crc)
             // in that case it will be called Corrupted and not handled while reading blocks unless the error is due to wrong data length
@@ -175,10 +218,11 @@ public class IncomingSocketThread extends Thread {
         }
     }
 
-
     ///region todo class methods
-    void requestAuth(SocketChannel channel) {}
-    void requestPair(SocketChannel channel) {}
+    private void readPairBuffer(SocketChannel sc, ByteBuffer bfr) { }
+    private boolean verifyAuth(SocketChannel channel) { return false; }
+    private void requestAuth(SocketChannel channel) {}
+    private void respondAuth(SocketChannel channel) {}
     ///endregion
 
     ///region todo interface methods probably
@@ -204,5 +248,10 @@ public class IncomingSocketThread extends Thread {
     }
     void onThreadStart() {}
     private void onThreadStop() {}
+
+    EAuth checkAuthorization(Socket sock) { return EAuth.Unauthorized; }
+    boolean checkBlacklist(Socket sock) { return false; }
+    boolean checkPairing(Socket sock) { return false; }
+    void reportUnauthorized(Socket sock) { }
     ///endregion
 }

@@ -14,9 +14,6 @@ public class mtCoreMain extends JFrame {
     private JPanel panel = new JPanel();
     public static void main (String[] args) throws SocketException {
         new mtCoreMain();
-        Enumeration<NetworkInterface> nets = NetworkInterface.getNetworkInterfaces();
-        for (NetworkInterface netint : Collections.list(nets))
-            displayInterfaceInformation(netint);
     }
     public mtCoreMain() {
         super("TEST FORM!");
@@ -37,13 +34,4 @@ public class mtCoreMain extends JFrame {
         //(new IncomingSocketThread()).start();
     }
 
-    static void displayInterfaceInformation(NetworkInterface netint) throws SocketException {
-        out.printf("Display name: %s\n", netint.getDisplayName());
-        out.printf("Name: %s\n", netint.getName());
-        Enumeration<InetAddress> inetAddresses = netint.getInetAddresses();
-        for (InetAddress inetAddress : Collections.list(inetAddresses)) {
-            out.printf("InetAddress: %s\n", inetAddress);
-        }
-        out.printf("\n");
-    }
 }
