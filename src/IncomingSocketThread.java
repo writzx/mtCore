@@ -1,6 +1,6 @@
+import Parser.Block.CAuthorizationBlock;
 import Parser.Block.CBlock;
 import Parser.Block.CPairingBlock;
-import Parser.Block.EMethodType;
 import Parser.Block.UnknownBlockException;
 
 import java.io.IOException;
@@ -23,6 +23,8 @@ public class IncomingSocketThread extends Thread {
     private HashMap<Socket, Boolean> mDiscardClients = new HashMap<>();
     private HashMap<Socket, ByteBuffer> mClientBuffers = new HashMap<>();
 
+    private Selector selector = null;
+
     public void cancel() {
         mCancel = true;
     }
@@ -30,7 +32,6 @@ public class IncomingSocketThread extends Thread {
     @Override
     public void run() {
         super.run();
-        Selector selector = null;
         try {
             selector = Selector.open();
             mAddresses = getBindAddresses();
@@ -85,8 +86,22 @@ public class IncomingSocketThread extends Thread {
                         switch ((EAuth) key.attachment()) {
                             case Authorized:
                                 ByteBuffer buffer = onIncomingData(sc);
+
                                 if (buffer != null) {
-                                    readBuffer(sc, buffer);
+                                    CBlock block = CBlock.factory(buffer);
+                                    if (block instanceof CAuthorizationBlock) {
+                                        // respond the auth since locally authorized
+                                        sc.register(selector, SelectionKey.OP_READ, EAuth.Authorizing);
+                                        respondAuth(sc);
+                                    } else if (block instanceof CPairingBlock) {
+                                        // refresh the connection auth and pair, ignore local authorization
+                                        sc.register(selector, SelectionKey.OP_READ, EAuth.AuthRequested); // todo this has to be done in managePairRequest after parsing request correctly
+                                        managePairRequest(sc, buffer);   // reads pair request and encrypted remote_public_key
+                                                                        // decrypt public key, encode passcode with it, and send in response
+                                                                        // also send the encrypted local_public_key in data
+                                    } else {
+                                        readBuffer(sc, buffer);
+                                    }
                                 }
                                 it.remove();
                                 break;
@@ -99,25 +114,30 @@ public class IncomingSocketThread extends Thread {
                                 break;
                             case NotAuthorized:
                                 buffer = onIncomingData(sc);
-                                if (buffer != null && CBlock.factory(buffer) instanceof CPairingBlock) {
-                                    sc.register(selector, SelectionKey.OP_READ, EAuth.AuthRequested);
-                                    readPairBuffer(sc, buffer);
-
+                                if (buffer != null) {
+                                    if (CBlock.factory(buffer) instanceof CPairingBlock) {
+                                        sc.register(selector, SelectionKey.OP_READ, EAuth.AuthRequested); // todo this has to be done in managePairRequest after parsing request correctly
+                                        managePairRequest(sc, buffer);   // reads pair request and encrypted remote_public_key
+                                                                        // decrypt public key, encode passcode with it, and send in response
+                                                                        // also send the encrypted local_public_key in data
+                                    }
                                 }
-                                // contains authorization information (authorization value or pairing value)
-                                // set the EAuth of the key accordingly in this call
-                                // pair_info = Pending (and send pairing response), auth_info = Authorized, else = Unauthorized
-                                // todo possibly EAuth will have more values to correctly specify the status (AuthRequested, PairRequested)
-                                // todo and we will not change the EAuth attachment for the key here
-                                it.remove();
-                                break;
-                            case RequestingPair:
-                                // contains pairing information
-                                // todo possibly EAuth will have more values to correctly specify the status (AuthRequested, PairRequested)
-                                // todo and we will not change the EAuth attachment for the key here
                                 it.remove();
                                 break;
                             case PairRequested:
+                                buffer = onIncomingData(sc);
+                                if (buffer != null && CBlock.factory(buffer) instanceof CPairingBlock) {
+                                    managePairResponse(sc, buffer); // decrypt the passcode bytes using local_private_key
+                                                                // and read the encrypted remote_public_key and decrypt it
+                                    sc.register(selector, SelectionKey.OP_READ, EAuth.Authorizing);
+                                    respondAuth(sc);
+                                }
+                                it.remove();
+                                break;
+                            case Authorizing:
+                                if (verifyAuth(sc)) {
+                                    sc.register(selector, SelectionKey.OP_READ, EAuth.Authorized);
+                                }
                                 it.remove();
                                 break;
                             case Unauthorized:
@@ -151,7 +171,6 @@ public class IncomingSocketThread extends Thread {
             }
             onThreadStop();
         }
-
     }
 
 
@@ -219,7 +238,8 @@ public class IncomingSocketThread extends Thread {
     }
 
     ///region todo class methods
-    private void readPairBuffer(SocketChannel sc, ByteBuffer bfr) { }
+    private void managePairRequest(SocketChannel sc, ByteBuffer bfr) { }
+    private void managePairResponse(SocketChannel sc, ByteBuffer bfr) { }
     private boolean verifyAuth(SocketChannel channel) { return false; }
     private void requestAuth(SocketChannel channel) {}
     private void respondAuth(SocketChannel channel) {}
