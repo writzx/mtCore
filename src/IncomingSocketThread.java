@@ -16,7 +16,7 @@ public class IncomingSocketThread extends Thread {
 
     protected Vector<SocketAddress> mAddresses;
 
-    private final static int MAX_DATA_SIZE = 8192;
+    private final static int MAX_DATA_SIZE = 0x2000;
     private final static int MAX_HEAD_SIZE = 8;
     private final static int MAX_BLOCK_SIZE = MAX_DATA_SIZE + MAX_HEAD_SIZE;
 
