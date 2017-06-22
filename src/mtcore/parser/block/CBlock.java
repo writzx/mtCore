@@ -25,8 +25,8 @@ public abstract class CBlock {
 
     private static CBlock factory(ByteBuffer bfr, EBlockType bType) throws UnknownBlockException, CorruptedBlockException {
         switch (bType) {
-            case Authorization: CAuthorizationBlock.factory(bfr);
-            case Pairing: return new CPairingBlock();
+            case Authorization: return CAuthorizationBlock.factory(bfr);
+            case Pairing: return CPairingBlock.factory(bfr);
             case Message: return new CMessageBlock();
             case Metadata: return new CMetadataBlock();
             case Data: return new CDataBlock();

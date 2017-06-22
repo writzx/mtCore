@@ -91,16 +91,27 @@ public class IncomingSocketThread extends Thread {
 
                                 if (buffer != null) {
                                     CBlock block = CBlock.factory(buffer);
-                                    if (block instanceof CAuthorizationBlock) {
-                                        // respond the auth since locally authorized
+                                    if (block instanceof CAuthorizationBlock.CAuthRequest) {
+                                        Log.w(TAG, "Received authorization request from authorized client! Responded anyway!");
                                         sc.register(selector, SelectionKey.OP_READ, EAuth.Authorizing);
                                         respondAuth(sc);
-                                    } else if (block instanceof CPairingBlock) {
+                                    } else if (block instanceof CAuthorizationBlock.CAuthResponse) {
+                                        if (verifyAuth(sc)) {
+                                            Log.w(TAG, "Received authorization response from authorized client!");
+                                            sc.register(selector, SelectionKey.OP_READ, EAuth.Authorized);
+                                        } else {
+                                            Log.w(TAG, "Received authorization response could not be verified! Requesting for new authorization data!");
+                                            sc.register(selector, SelectionKey.OP_READ, EAuth.AuthRequested);
+                                            requestAuth(sc);
+                                        }
+                                    } else if (block instanceof CPairingBlock.CPairRequest) {
                                         // refresh the connection auth and pair, ignore local authorization
-                                        sc.register(selector, SelectionKey.OP_READ, EAuth.AuthRequested); // todo this has to be done in managePairRequest after parsing request correctly
+                                        sc.register(selector, SelectionKey.OP_READ, EAuth.AuthRequested); // todo this has to be done or updated INSIDE managePairRequest after parsing request correctly
                                         managePairRequest(sc, buffer);   // reads pair request and encrypted remote_public_key
-                                                                        // decrypt public key, encode passcode with it, and send in response
-                                                                        // also send the encrypted local_public_key in data
+                                                                         // decrypt public key, encode passcode with it, and send in response
+                                                                         // also send the encrypted local_public_key in data
+                                    } else if (block instanceof CPairingBlock.CPairResponse) {
+                                        Log.e(TAG, "Illegal response from authorized client! [Type: CPairingBlock.CPairResponse], buffer was dismissed!");
                                     } else {
                                         readBuffer(sc, buffer);
                                     }
@@ -118,10 +129,10 @@ public class IncomingSocketThread extends Thread {
                                 buffer = onIncomingData(sc);
                                 if (buffer != null) {
                                     if (CBlock.factory(buffer) instanceof CPairingBlock) {
-                                        sc.register(selector, SelectionKey.OP_READ, EAuth.AuthRequested); // todo this has to be done in managePairRequest after parsing request correctly
+                                        sc.register(selector, SelectionKey.OP_READ, EAuth.AuthRequested); // todo this has to be done or updated INSIDE managePairRequest after parsing request correctly
                                         managePairRequest(sc, buffer);   // reads pair request and encrypted remote_public_key
-                                                                        // decrypt public key, encode passcode with it, and send in response
-                                                                        // also send the encrypted local_public_key in data
+                                                                         // decrypt public key, encode passcode with it, and send in response
+                                                                         // also send the encrypted local_public_key in data
                                     }
                                 }
                                 it.remove();
@@ -130,7 +141,7 @@ public class IncomingSocketThread extends Thread {
                                 buffer = onIncomingData(sc);
                                 if (buffer != null && CBlock.factory(buffer) instanceof CPairingBlock) {
                                     managePairResponse(sc, buffer); // decrypt the passcode bytes using local_private_key
-                                                                // and read the encrypted remote_public_key and decrypt it
+                                                                    // and read the encrypted remote_public_key and decrypt it
                                     sc.register(selector, SelectionKey.OP_READ, EAuth.Authorizing);
                                     respondAuth(sc);
                                 }

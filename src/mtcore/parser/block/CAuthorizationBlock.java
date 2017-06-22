@@ -53,6 +53,7 @@ public class CAuthorizationBlock extends CBlock {
 
         @Override
         public void write(ByteBuffer bfr) throws CorruptedBlockException {
+            authLength = (short) reserved.length;
             super.write(bfr);
             bfr.put(reserved);
         }
@@ -65,13 +66,14 @@ public class CAuthorizationBlock extends CBlock {
         public void read(ByteBuffer bfr) throws CorruptedBlockException {
             super.read(bfr);
             authData = new byte[authLength];
-            bfr.get(authData); // todo check
+            bfr.get(authData);
         }
 
         @Override
         public void write(ByteBuffer bfr) throws CorruptedBlockException {
+            authLength = (short) authData.length;
             super.write(bfr);
-            bfr.put(authData); // todo check
+            bfr.put(authData);
         }
     }
 }
