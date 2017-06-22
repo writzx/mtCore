@@ -4,28 +4,28 @@ import java.nio.ByteBuffer;
 
 public abstract class CBlock {
     EBlockType blockType;
-    CBlockID id;
     EMethodType method;
+    CBlockID id;
     short checksum;
 
     public void read(ByteBuffer bfr) {
         blockType = EBlockType.parse(bfr.get());
+        method = EMethodType.parse(bfr.get());
         id = new CBlockID();
         id.read(bfr);
-        method = EMethodType.parse(bfr.get());
         checksum = bfr.getShort();
     }
 
     public void write(ByteBuffer bfr) {
         bfr.put(blockType.v());
-        id.write(bfr);
         bfr.put(method.v());
+        id.write(bfr);
         bfr.putShort(checksum);
     }
 
-    private static CBlock factory(EBlockType bType) throws UnknownBlockException {
+    private static CBlock factory(ByteBuffer bfr, EBlockType bType) throws UnknownBlockException {
         switch (bType) {
-            case Authorization: return new CAuthorizationBlock();
+            case Authorization: CAuthorizationBlock.factory(bfr);
             case Pairing: return new CPairingBlock();
             case Message: return new CMessageBlock();
             case Metadata: return new CMetadataBlock();
@@ -38,6 +38,6 @@ public abstract class CBlock {
         bfr.mark();
         byte b = bfr.get();
         bfr.reset();
-        return factory(EBlockType.parse(b));
+        return factory(bfr, EBlockType.parse(b));
     }
 }
