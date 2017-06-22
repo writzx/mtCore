@@ -1,4 +1,4 @@
-package Parser.Block;
+package mtcore.parser.block;
 
 public class CorruptedBlockException extends IllegalArgumentException {
     EMethodType methodType;

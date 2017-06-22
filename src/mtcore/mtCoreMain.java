@@ -1,12 +1,8 @@
+package mtcore;
+
 import javax.swing.*;
 import java.io.PrintStream;
-import java.net.InetAddress;
-import java.net.NetworkInterface;
 import java.net.SocketException;
-import java.util.Collections;
-import java.util.Enumeration;
-
-import static java.lang.System.out;
 
 public class mtCoreMain extends JFrame {
     private JTextArea logArea = new JTextArea("", 32, 64);
@@ -31,7 +27,7 @@ public class mtCoreMain extends JFrame {
         setLocationByPlatform(true);
         setVisible(true);
 
-        //(new IncomingSocketThread()).start();
+        //(new mtcore.IncomingSocketThread()).start();
     }
 
 }

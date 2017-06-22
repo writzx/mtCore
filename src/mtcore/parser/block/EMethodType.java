@@ -1,13 +1,15 @@
-package Parser.Block;
+package mtcore.parser.block;
 
-public enum EBlockType {
-    Authorization((byte) 0xAA), Pairing((byte) 0xBB), Message((byte) 0xCC), Metadata((byte) 0xDD), Data((byte) 0xDD), Information ((byte) 0xEE), Unknown((byte) 0xFF);
+public enum EMethodType {
+    Request((byte) 0x55),
+    Response((byte) 0x66),
+    Unknown((byte) 0x77);
 
     byte unknown_value;
     byte value;
 
-    EBlockType(byte val) {
-        for (EBlockType b : values()) {
+    EMethodType(byte val) {
+        for (EMethodType b : values()) {
             if (b.value == val) {
                 value = val;
                 return;
@@ -19,9 +21,9 @@ public enum EBlockType {
 
     public Byte v() { return value; }
 
-    public static EBlockType parse(byte val) {
-        EBlockType ret = Unknown;
-        for (EBlockType b : values()) {
+    public static EMethodType parse(byte val) {
+        EMethodType ret = Unknown;
+        for (EMethodType b : values()) {
             if (b.value == val) {
                 ret.value = val;
                 return ret;

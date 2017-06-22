@@ -1,4 +1,4 @@
-package Parser.Block;
+package mtcore.parser.block;
 
 import java.nio.ByteBuffer;
 
@@ -8,7 +8,7 @@ public abstract class CBlock {
     CBlockID id;
     short checksum;
 
-    public void read(ByteBuffer bfr) {
+    public void read(ByteBuffer bfr) throws CorruptedBlockException {
         blockType = EBlockType.parse(bfr.get());
         method = EMethodType.parse(bfr.get());
         id = new CBlockID();
@@ -16,25 +16,26 @@ public abstract class CBlock {
         checksum = bfr.getShort();
     }
 
-    public void write(ByteBuffer bfr) {
+    public void write(ByteBuffer bfr) throws CorruptedBlockException {
         bfr.put(blockType.v());
         bfr.put(method.v());
         id.write(bfr);
         bfr.putShort(checksum);
     }
 
-    private static CBlock factory(ByteBuffer bfr, EBlockType bType) throws UnknownBlockException {
+    private static CBlock factory(ByteBuffer bfr, EBlockType bType) throws UnknownBlockException, CorruptedBlockException {
         switch (bType) {
             case Authorization: CAuthorizationBlock.factory(bfr);
             case Pairing: return new CPairingBlock();
             case Message: return new CMessageBlock();
             case Metadata: return new CMetadataBlock();
             case Data: return new CDataBlock();
-            case Unknown: default: throw new UnknownBlockException("Unknown Block", bType); // handle this in code
+            case Information: return new CInformationBlock();
+            case Unknown: default: throw new UnknownBlockException("Unknown block", bType); // handle this in code
         }
     }
 
-    public static CBlock factory(ByteBuffer bfr) throws UnknownBlockException {
+    public static CBlock factory(ByteBuffer bfr) throws UnknownBlockException, CorruptedBlockException {
         bfr.mark();
         byte b = bfr.get();
         bfr.reset();

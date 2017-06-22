@@ -1,4 +1,4 @@
-package Parser.Block;
+package mtcore.parser.block;
 
 public class UnknownBlockException extends IllegalArgumentException {
     EBlockType bType;

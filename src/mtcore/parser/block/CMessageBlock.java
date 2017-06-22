@@ -1,4 +1,4 @@
-package Parser.Block;
+package mtcore.parser.block;
 
 import java.nio.ByteBuffer;
 
@@ -7,12 +7,12 @@ public class CMessageBlock extends CBlock {
     byte[] message;      // length = messageLength
 
     @Override
-    public void read(ByteBuffer bfr) {
+    public void read(ByteBuffer bfr) throws CorruptedBlockException {
         super.read(bfr);
     }
 
     @Override
-    public void write(ByteBuffer bfr) {
+    public void write(ByteBuffer bfr) throws CorruptedBlockException {
         super.write(bfr);
     }
 }

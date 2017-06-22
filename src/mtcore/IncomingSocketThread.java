@@ -1,7 +1,9 @@
-import Parser.Block.CAuthorizationBlock;
-import Parser.Block.CBlock;
-import Parser.Block.CPairingBlock;
-import Parser.Block.UnknownBlockException;
+package mtcore;
+
+import mtcore.parser.block.CAuthorizationBlock;
+import mtcore.parser.block.CBlock;
+import mtcore.parser.block.CPairingBlock;
+import mtcore.parser.block.UnknownBlockException;
 
 import java.io.IOException;
 import java.net.*;
@@ -14,7 +16,7 @@ import java.util.*;
 
 public class IncomingSocketThread extends Thread {
 
-    private String TAG = "IncomingSocketThread: ";
+    private String TAG = "mtcore.IncomingSocketThread: ";
 
     private Vector<SocketAddress> mAddresses;
 
