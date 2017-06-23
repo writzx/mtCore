@@ -219,7 +219,7 @@ public class IncomingSocketThread extends Thread {
         ByteBuffer buffer = mClientBuffers.get(sc.socket());
         if (buffer == null) {
             // allocate new buffer
-            ByteBuffer newBlock = ByteBuffer.allocate(Constants.MAX_BLOCK_SIZE);
+            ByteBuffer newBlock = ByteBuffer.allocate(Constants.MAX_BLOCK_LENGTH);
             mClientBuffers.put(sc.socket(), newBlock);
             mDiscardClients.put(sc.socket(), false);
             buffer = newBlock;

@@ -1,8 +1,10 @@
 package mtcore.parser.block;
 
+import mtcore.parser.IAbstractStructure;
+
 import java.nio.ByteBuffer;
 
-public class CBlockID {
+public class CBlockID implements IAbstractStructure {
     byte group;
     byte code;
 
@@ -13,5 +15,10 @@ public class CBlockID {
     public void write(ByteBuffer bfr) throws CorruptedBlockException {
         bfr.put(group);
         bfr.put(code);
+    }
+
+    @Override
+    public int getLength() {
+        return 1 + 1;
     }
 }

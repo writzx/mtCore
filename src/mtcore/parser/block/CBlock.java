@@ -1,13 +1,21 @@
 package mtcore.parser.block;
 
+import mtcore.parser.IAbstractStructure;
+
 import java.nio.ByteBuffer;
 
-public abstract class CBlock {
+public abstract class CBlock implements IAbstractStructure {
     public EBlockType blockType;
     public EMethodType method;
     public CBlockID id;
     public short checksum;
 
+    @Override
+    public int getLength() {
+        return 1 + 1 + id.getLength() + 2;
+    }
+
+    @Override
     public void read(ByteBuffer bfr) throws CorruptedBlockException {
         blockType = EBlockType.parse(bfr.get());
         method = EMethodType.parse(bfr.get());
@@ -16,6 +24,7 @@ public abstract class CBlock {
         checksum = bfr.getShort();
     }
 
+    @Override
     public void write(ByteBuffer bfr) throws CorruptedBlockException {
         bfr.put(blockType.v());
         bfr.put(method.v());

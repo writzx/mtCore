@@ -11,18 +11,23 @@ public class CAuthorizationBlock extends CBlock {
     public void read(ByteBuffer bfr) throws CorruptedBlockException {
         super.read(bfr);
         authLength = bfr.getShort();
-        if (authLength > Constants.MAX_DATA_SIZE || authLength > bfr.remaining()) {
+        if (authLength > Constants.MAX_DATA_LENGTH || authLength > bfr.remaining()) {
             throw new CorruptedBlockException(method, authLength);
         }
     }
 
     @Override
     public void write(ByteBuffer bfr) throws CorruptedBlockException {
-        super.write(bfr);
-        if (authLength > Constants.MAX_DATA_SIZE || authLength > bfr.remaining()) {
+        if (authLength > Constants.MAX_DATA_LENGTH || authLength > bfr.remaining()) {
             throw new CorruptedBlockException();
         }
+        super.write(bfr);
         bfr.putShort(authLength);
+    }
+
+    @Override
+    public int getLength() {
+        return super.getLength() + 2;
     }
 
     private static CAuthorizationBlock factory(EMethodType method) throws CorruptedBlockException {
@@ -57,6 +62,11 @@ public class CAuthorizationBlock extends CBlock {
             super.write(bfr);
             bfr.put(reserved);
         }
+
+        @Override
+        public int getLength() {
+            return super.getLength() + reserved.length;
+        }
     }
 
     public static class CAuthResponse extends CAuthorizationBlock {
@@ -74,6 +84,11 @@ public class CAuthorizationBlock extends CBlock {
             authLength = (short) authData.length;
             super.write(bfr);
             bfr.put(authData);
+        }
+
+        @Override
+        public int getLength() {
+            return super.getLength() + authData.length;
         }
     }
 }

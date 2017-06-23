@@ -2,12 +2,16 @@ package mtcore.parser.block;
 
 import java.nio.ByteBuffer;
 
-import static mtcore.Constants.MAX_DATA_SIZE;
+import static mtcore.Constants.MAX_DATA_LENGTH;
 
 public class CPairingBlock extends CBlock {
     public short pairLength; // both request and response has to have correct length
                       // length will be according to their inner format
 
+    @Override
+    public int getLength() {
+        return super.getLength() + 2;
+    }
 
     private static CPairingBlock factory(EMethodType method) throws CorruptedBlockException {
         switch (method) {
@@ -28,17 +32,17 @@ public class CPairingBlock extends CBlock {
     @Override
     public void read(ByteBuffer bfr) throws CorruptedBlockException {
         super.read(bfr);
-        if (pairLength > MAX_DATA_SIZE || pairLength > bfr.remaining()) {
+        if (pairLength > MAX_DATA_LENGTH || pairLength > bfr.remaining()) {
             throw new CorruptedBlockException(method, pairLength);
         }
     }
 
     @Override
     public void write(ByteBuffer bfr) throws CorruptedBlockException {
-        super.write(bfr);
-        if (pairLength > MAX_DATA_SIZE || pairLength > bfr.remaining()) {
+        if (pairLength > MAX_DATA_LENGTH || pairLength > bfr.remaining()) {
             throw new CorruptedBlockException(method, pairLength);
         }
+        super.write(bfr);
         bfr.putShort(pairLength);
     }
 
@@ -58,6 +62,11 @@ public class CPairingBlock extends CBlock {
             super.write(bfr);
             bfr.put(pubkeyData);
         }
+
+        @Override
+        public int getLength() {
+            return super.getLength() + pubkeyData.length;
+        }
     }
 
     public static class CPairResponse extends CPairingBlock {
@@ -72,7 +81,7 @@ public class CPairingBlock extends CBlock {
             codeLength = bfr.getShort();
             pubkeyLength = bfr.getShort();
             short tmpLen = (short) (codeLength + pubkeyLength + (2 * 2)); // two short length
-            if (tmpLen > pairLength && (tmpLen > MAX_DATA_SIZE || tmpLen > bfr.remaining())) {
+            if (tmpLen > pairLength && (tmpLen > MAX_DATA_LENGTH || tmpLen > bfr.remaining())) {
                 throw new CorruptedBlockException(method, tmpLen);
             }
             codeData = new byte[codeLength];
@@ -98,6 +107,11 @@ public class CPairingBlock extends CBlock {
             bfr.putShort(pubkeyLength);
             bfr.put(codeData);
             bfr.put(pubkeyData);
+        }
+
+        @Override
+        public int getLength() {
+            return super.getLength() + 2 + 2 + codeData.length + pubkeyData.length;
         }
     }
 }
