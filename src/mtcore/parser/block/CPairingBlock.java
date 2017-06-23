@@ -1,11 +1,11 @@
 package mtcore.parser.block;
 
-import mtcore.Constants;
-
 import java.nio.ByteBuffer;
 
+import static mtcore.Constants.MAX_DATA_SIZE;
+
 public class CPairingBlock extends CBlock {
-    short pairLength; // both request and response has to have correct length
+    public short pairLength; // both request and response has to have correct length
                       // length will be according to their inner format
 
 
@@ -28,7 +28,7 @@ public class CPairingBlock extends CBlock {
     @Override
     public void read(ByteBuffer bfr) throws CorruptedBlockException {
         super.read(bfr);
-        if (pairLength > Constants.MAX_DATA_SIZE || pairLength > bfr.remaining()) {
+        if (pairLength > MAX_DATA_SIZE || pairLength > bfr.remaining()) {
             throw new CorruptedBlockException(method, pairLength);
         }
     }
@@ -36,14 +36,14 @@ public class CPairingBlock extends CBlock {
     @Override
     public void write(ByteBuffer bfr) throws CorruptedBlockException {
         super.write(bfr);
-        if (pairLength > 0x2000 || pairLength > bfr.remaining()) {
+        if (pairLength > MAX_DATA_SIZE || pairLength > bfr.remaining()) {
             throw new CorruptedBlockException(method, pairLength);
         }
         bfr.putShort(pairLength);
     }
 
     public static class CPairRequest extends CPairingBlock {
-        byte[] pubkeyData; // encrypted with passcode which is to be obtained from remote user
+        public byte[] pubkeyData; // encrypted with passcode which is to be obtained from remote user
 
         @Override
         public void read(ByteBuffer bfr) throws CorruptedBlockException {
@@ -61,10 +61,10 @@ public class CPairingBlock extends CBlock {
     }
 
     public static class CPairResponse extends CPairingBlock {
-        short codeLength;
-        short pubkeyLength;
-        byte[] codeData;        // encrypted passcode
-        byte[] pubkeyData;      // encrypted public key
+        public short codeLength;
+        public short pubkeyLength;
+        public byte[] codeData;        // encrypted passcode
+        public byte[] pubkeyData;      // encrypted public key
 
         @Override
         public void read(ByteBuffer bfr) throws CorruptedBlockException {
@@ -72,7 +72,7 @@ public class CPairingBlock extends CBlock {
             codeLength = bfr.getShort();
             pubkeyLength = bfr.getShort();
             short tmpLen = (short) (codeLength + pubkeyLength + (2 * 2)); // two short length
-            if (tmpLen > pairLength && (tmpLen > Constants.MAX_DATA_SIZE || tmpLen > bfr.remaining())) {
+            if (tmpLen > pairLength && (tmpLen > MAX_DATA_SIZE || tmpLen > bfr.remaining())) {
                 throw new CorruptedBlockException(method, tmpLen);
             }
             codeData = new byte[codeLength];

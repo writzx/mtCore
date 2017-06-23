@@ -1,9 +1,6 @@
 package mtcore;
 
-import mtcore.parser.block.CAuthorizationBlock;
-import mtcore.parser.block.CBlock;
-import mtcore.parser.block.CPairingBlock;
-import mtcore.parser.block.UnknownBlockException;
+import mtcore.parser.block.*;
 
 import java.io.IOException;
 import java.net.*;
@@ -15,8 +12,7 @@ import java.nio.channels.SocketChannel;
 import java.util.*;
 
 public class IncomingSocketThread extends Thread {
-
-    private String TAG = "mtcore.IncomingSocketThread: ";
+    private String TAG = "IncomingSocketThread: ";
 
     private Vector<SocketAddress> mAddresses;
 
@@ -31,12 +27,14 @@ public class IncomingSocketThread extends Thread {
         mCancel = true;
     }
 
+    IIncomingSocketListener mSocketListener;
+
     @Override
     public void run() {
         super.run();
         try {
             selector = Selector.open();
-            mAddresses = getBindAddresses();
+            mAddresses = mSocketListener.getBindAddresses();
             for (SocketAddress address : mAddresses) {
                 ServerSocketChannel ssc = ServerSocketChannel.open();
                 ssc.configureBlocking(false);
@@ -45,7 +43,7 @@ public class IncomingSocketThread extends Thread {
                 ssc.register(selector, SelectionKey.OP_ACCEPT);
             }
 
-            onThreadStart();
+            mSocketListener.onThreadStart();
 
             Iterator<SelectionKey> it;
             while (!mCancel) {
@@ -59,20 +57,18 @@ public class IncomingSocketThread extends Thread {
                             sc.configureBlocking(false);
                             sc.socket().setTcpNoDelay(true);
                             // check auth status using DNS-SD id
-                            EAuth auth = checkAuthorization(sc.socket());
+                            EAuth auth = mSocketListener.checkAuthorization(sc);
                             switch (auth) {
                                 case Authorized:
-                                    // might be interface call
                                     sc.register(selector, SelectionKey.OP_READ, EAuth.AuthRequested);
                                     requestAuth(sc);
                                     break;
                                 case NotAuthorized:
-                                    // might be interface call
                                     sc.register(selector, SelectionKey.OP_READ, EAuth.NotAuthorized);
                                     break;
                                 case Unauthorized:
                                     sc.register(selector, SelectionKey.OP_READ, EAuth.Unauthorized);
-                                    reportUnauthorized(sc.socket());
+                                    mSocketListener.reportUnauthorized(sc);
                                     break;
                                 default:
                                     // just accept the connection, don't change the auth
@@ -88,16 +84,16 @@ public class IncomingSocketThread extends Thread {
                         switch ((EAuth) key.attachment()) {
                             case Authorized:
                                 ByteBuffer buffer = onIncomingData(sc);
-
                                 if (buffer != null) {
                                     CBlock block = CBlock.factory(buffer);
                                     if (block instanceof CAuthorizationBlock.CAuthRequest) {
-                                        Log.w(TAG, "Received authorization request from authorized client! Responded anyway!");
+                                        Log.w(TAG, "Received authorization request from authorized client! Responded!");
                                         sc.register(selector, SelectionKey.OP_READ, EAuth.Authorizing);
                                         respondAuth(sc);
                                     } else if (block instanceof CAuthorizationBlock.CAuthResponse) {
-                                        if (verifyAuth(sc)) {
-                                            Log.w(TAG, "Received authorization response from authorized client!");
+                                        block.read(buffer);
+                                        if (mSocketListener.verifyAuth(sc, (CAuthorizationBlock.CAuthResponse) block)) {
+                                            Log.w(TAG, "Received authorization response from authorized client! Verified auth!");
                                             sc.register(selector, SelectionKey.OP_READ, EAuth.Authorized);
                                         } else {
                                             Log.w(TAG, "Received authorization response could not be verified! Requesting for new authorization data!");
@@ -106,10 +102,14 @@ public class IncomingSocketThread extends Thread {
                                         }
                                     } else if (block instanceof CPairingBlock.CPairRequest) {
                                         // refresh the connection auth and pair, ignore local authorization
-                                        sc.register(selector, SelectionKey.OP_READ, EAuth.AuthRequested); // todo this has to be done or updated INSIDE managePairRequest after parsing request correctly
-                                        managePairRequest(sc, buffer);   // reads pair request and encrypted remote_public_key
-                                                                         // decrypt public key, encode passcode with it, and send in response
-                                                                         // also send the encrypted local_public_key in data
+                                        block.read(buffer);
+                                        if (mSocketListener.handlePairRequest(sc, (CPairingBlock.CPairRequest) block)) {
+                                            sc.register(selector, SelectionKey.OP_READ, EAuth.PairRequested);
+                                        } else {
+                                            Log.w(TAG, "Received pairing information is not in correct format!");
+                                            // close the channel
+                                            sc.close();
+                                        }
                                     } else if (block instanceof CPairingBlock.CPairResponse) {
                                         Log.e(TAG, "Illegal response from authorized client! [Type: CPairingBlock.CPairResponse], buffer was dismissed!");
                                     } else {
@@ -119,37 +119,66 @@ public class IncomingSocketThread extends Thread {
                                 it.remove();
                                 break;
                             case AuthRequested:
-                                if (verifyAuth(sc)) { // reads block and sends to interface to verify
-                                    sc.register(selector, SelectionKey.OP_READ, EAuth.Authorized);
-                                    respondAuth(sc);
+                                buffer = onIncomingData(sc);
+                                if (buffer != null) {
+                                    CBlock block = CBlock.factory(buffer);
+                                    if (block instanceof CAuthorizationBlock.CAuthResponse) {
+                                        block.read(buffer);
+                                        if (mSocketListener.verifyAuth(sc, (CAuthorizationBlock.CAuthResponse) block)) { // reads block and sends to interface to verify
+                                            sc.register(selector, SelectionKey.OP_READ, EAuth.Authorized);
+                                            respondAuth(sc);
+                                        } else {
+                                            Log.w(TAG, "Authorization response could not be verified!");
+                                        }
+                                    }
                                 }
                                 it.remove();
                                 break;
                             case NotAuthorized:
                                 buffer = onIncomingData(sc);
                                 if (buffer != null) {
-                                    if (CBlock.factory(buffer) instanceof CPairingBlock) {
-                                        sc.register(selector, SelectionKey.OP_READ, EAuth.AuthRequested); // todo this has to be done or updated INSIDE managePairRequest after parsing request correctly
-                                        managePairRequest(sc, buffer);   // reads pair request and encrypted remote_public_key
-                                                                         // decrypt public key, encode passcode with it, and send in response
-                                                                         // also send the encrypted local_public_key in data
+                                    CBlock block = CBlock.factory(buffer);
+                                    if (block instanceof CPairingBlock.CPairRequest) {
+                                        block.read(buffer);
+                                        if (mSocketListener.handlePairRequest(sc, (CPairingBlock.CPairRequest) block)) {
+                                            sc.register(selector, SelectionKey.OP_READ, EAuth.AuthRequested);
+                                        } else {
+                                            Log.w(TAG, "Received pairing information is not in correct format!");
+                                            // close the channel
+                                            sc.close();
+                                        }
                                     }
                                 }
                                 it.remove();
                                 break;
                             case PairRequested:
                                 buffer = onIncomingData(sc);
-                                if (buffer != null && CBlock.factory(buffer) instanceof CPairingBlock) {
-                                    managePairResponse(sc, buffer); // decrypt the passcode bytes using local_private_key
-                                                                    // and read the encrypted remote_public_key and decrypt it
-                                    sc.register(selector, SelectionKey.OP_READ, EAuth.Authorizing);
-                                    respondAuth(sc);
+                                if (buffer!= null) {
+                                    CBlock block = CBlock.factory(buffer);
+                                    if (block instanceof CPairingBlock.CPairResponse) {
+                                        // and read the encrypted remote_public_key and decrypt it
+                                        if (mSocketListener.verifyPairResponse(sc, (CPairingBlock.CPairResponse) block)) { // decrypt the passcode bytes using local_private_key
+                                            sc.register(selector, SelectionKey.OP_READ, EAuth.Authorizing);
+                                            respondAuth(sc);
+                                        } else {
+                                            Log.w(TAG, "Pairing information could not be verified!");
+                                            // close the channel
+                                            sc.close();
+                                        }
+                                    }
                                 }
                                 it.remove();
                                 break;
                             case Authorizing:
-                                if (verifyAuth(sc)) {
-                                    sc.register(selector, SelectionKey.OP_READ, EAuth.Authorized);
+                                buffer = onIncomingData(sc);
+                                if (buffer != null) {
+                                    CBlock block = CBlock.factory(buffer);
+                                    if (block instanceof CAuthorizationBlock.CAuthResponse) {
+                                        block.read(buffer);
+                                        if (mSocketListener.verifyAuth(sc, (CAuthorizationBlock.CAuthResponse) block)) {
+                                            sc.register(selector, SelectionKey.OP_READ, EAuth.Authorized);
+                                        }
+                                    }
                                 }
                                 it.remove();
                                 break;
@@ -182,10 +211,9 @@ public class IncomingSocketThread extends Thread {
                 }
                 try { selector.close(); } catch (IOException ignored) {}
             }
-            onThreadStop();
+            mSocketListener.onThreadStop();
         }
     }
-
 
     private ByteBuffer onIncomingData(SocketChannel sc) {
         ByteBuffer buffer = mClientBuffers.get(sc.socket());
@@ -250,41 +278,35 @@ public class IncomingSocketThread extends Thread {
         }
     }
 
-    ///region todo class methods
-    private void managePairRequest(SocketChannel sc, ByteBuffer bfr) { }
-    private void managePairResponse(SocketChannel sc, ByteBuffer bfr) { }
-    private boolean verifyAuth(SocketChannel channel) { return false; }
-    private void requestAuth(SocketChannel channel) {}
-    private void respondAuth(SocketChannel channel) {}
-    ///endregion
+    private void requestAuth(SocketChannel channel) {
+        // generate auth request block
+        CAuthorizationBlock.CAuthRequest auth_block = new CAuthorizationBlock.CAuthRequest();
+        auth_block.blockType = EBlockType.Authorization;
+        auth_block.method = EMethodType.Request;
 
-    ///region todo interface methods probably
-    Vector<SocketAddress> getBindAddresses() throws SocketException {
+        // auth request block contains no data
+        auth_block.authLength = 0x00;
+        auth_block.reserved = new byte[0];
 
-        //TODO Conveniently Interfaces will be determined by looking at DNS-SD broadcast continuously so this function should be a interface function to be handled by native app
-        Vector<SocketAddress> ret = new Vector<>();
+        auth_block.id = mSocketListener.generateBlockID(channel, auth_block);
+        auth_block.checksum = mSocketListener.generateChecksum(auth_block);
 
-        ret.add(new InetSocketAddress(9999));
-
-        Enumeration<NetworkInterface> ifaces = NetworkInterface.getNetworkInterfaces();
-        while (ifaces.hasMoreElements()) {
-            NetworkInterface iface = ifaces.nextElement();
-            Enumeration<InetAddress> addresses = iface.getInetAddresses();
-            while (addresses.hasMoreElements()) {
-                InetAddress address = addresses.nextElement();
-
-                System.out.println(address.toString() + ":9999");
-            }
-        }
-
-        return ret;
+        mSocketListener.sendBlock(channel, auth_block);
     }
-    void onThreadStart() {}
-    private void onThreadStop() {}
 
-    EAuth checkAuthorization(Socket sock) { return EAuth.Unauthorized; }
-    boolean checkBlacklist(Socket sock) { return false; }
-    boolean checkPairing(Socket sock) { return false; }
-    void reportUnauthorized(Socket sock) { }
-    ///endregion
+    private void respondAuth(SocketChannel channel) {
+        CAuthorizationBlock.CAuthResponse auth_block = new CAuthorizationBlock.CAuthResponse();
+        auth_block.blockType = EBlockType.Authorization;
+        auth_block.method = EMethodType.Response;
+
+        byte[] data = mSocketListener.getAuthData(channel);
+
+        auth_block.authLength = (short) data.length;
+        auth_block.authData = data;
+
+        auth_block.id = mSocketListener.generateBlockID(channel, auth_block);
+        auth_block.checksum = mSocketListener.generateChecksum(auth_block);
+
+        mSocketListener.sendBlock(channel, auth_block);
+    }
 }

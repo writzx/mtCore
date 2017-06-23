@@ -3,10 +3,10 @@ package mtcore.parser.block;
 import java.nio.ByteBuffer;
 
 public abstract class CBlock {
-    EBlockType blockType;
-    EMethodType method;
-    CBlockID id;
-    short checksum;
+    public EBlockType blockType;
+    public EMethodType method;
+    public CBlockID id;
+    public short checksum;
 
     public void read(ByteBuffer bfr) throws CorruptedBlockException {
         blockType = EBlockType.parse(bfr.get());

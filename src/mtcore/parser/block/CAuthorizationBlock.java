@@ -5,7 +5,7 @@ import mtcore.Constants;
 import java.nio.ByteBuffer;
 
 public class CAuthorizationBlock extends CBlock {
-    short authLength; // less than 0x2000
+    public short authLength; // less than 0x2000
 
     @Override
     public void read(ByteBuffer bfr) throws CorruptedBlockException {
@@ -19,7 +19,7 @@ public class CAuthorizationBlock extends CBlock {
     @Override
     public void write(ByteBuffer bfr) throws CorruptedBlockException {
         super.write(bfr);
-        if (authLength > 0x2000 || authLength > bfr.remaining()) {
+        if (authLength > Constants.MAX_DATA_SIZE || authLength > bfr.remaining()) {
             throw new CorruptedBlockException();
         }
         bfr.putShort(authLength);
@@ -42,7 +42,7 @@ public class CAuthorizationBlock extends CBlock {
     }
 
     public static class CAuthRequest extends CAuthorizationBlock {
-        byte[] reserved; // random data, length = authLength;
+        public byte[] reserved; // random data, length = authLength; mostly empty
 
         @Override
         public void read(ByteBuffer bfr) throws CorruptedBlockException {
@@ -60,7 +60,7 @@ public class CAuthorizationBlock extends CBlock {
     }
 
     public static class CAuthResponse extends CAuthorizationBlock {
-        byte[] authData; // dummy for now (will have specific format later), length = authLength;
+        public byte[] authData; // contains encrypted ip:port address (remove leading '/')
 
         @Override
         public void read(ByteBuffer bfr) throws CorruptedBlockException {
