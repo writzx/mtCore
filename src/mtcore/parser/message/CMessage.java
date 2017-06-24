@@ -2,22 +2,20 @@ package mtcore.parser.message;
 
 import mtcore.Constants;
 import mtcore.parser.IAbstractStructure;
-import mtcore.parser.block.CBlockID;
 import mtcore.parser.block.CorruptedBlockException;
 import mtcore.parser.block.UnknownBlockException;
 
 import java.nio.ByteBuffer;
 
 public class CMessage implements IAbstractStructure {
-    EMessageType messageType;
     CLink link; // linked block description
-    long timestamp; // send time
+    long timestamp; // message send time
     short messageLength;
     byte[] message;
 
     @Override
     public void read(ByteBuffer bfr) throws UnknownBlockException, CorruptedBlockException {
-        messageType = EMessageType.parse(bfr.get());
+        link = new CLink();
         link.read(bfr);
         timestamp = bfr.getLong();
         messageLength = bfr.getShort();
@@ -27,7 +25,6 @@ public class CMessage implements IAbstractStructure {
 
     @Override
     public void write(ByteBuffer bfr) throws UnknownBlockException, CorruptedBlockException {
-        bfr.put(messageType.v());
         link.write(bfr);
         bfr.putLong(timestamp);
         bfr.putShort(messageLength);
@@ -40,7 +37,7 @@ public class CMessage implements IAbstractStructure {
     }
 
     @Override
-    public int getMaxLength() {
+    public int getMaxDataLength() {
         return Constants.MAX_DATA_LENGTH - (Byte.BYTES + link.getLength() + Long.BYTES + Short.BYTES);
     }
 }

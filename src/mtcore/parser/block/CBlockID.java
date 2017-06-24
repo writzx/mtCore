@@ -21,4 +21,9 @@ public class CBlockID implements IAbstractStructure {
     public int getLength() {
         return Byte.BYTES + Byte.BYTES;
     }
+
+    @Override
+    public int getMaxDataLength() {
+        return Byte.BYTES + Byte.BYTES;
+    }
 }

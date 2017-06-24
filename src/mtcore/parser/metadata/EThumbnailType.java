@@ -1,29 +1,27 @@
-package mtcore.parser.message;
+package mtcore.parser.metadata;
 
-public enum ELinkType {
-    Reply((byte) 0x69),
-    Attachment((byte) 0x70),
-    None((byte) 0x00);
+public enum EThumbnailType {
+    Video((byte) 0x1), Image((byte) 0x2), Document((byte) 0x3), Unknown ((byte) 0x9);
 
     byte unknown_value;
     byte value;
 
-    ELinkType(byte val) {
-        for (ELinkType b : values()) {
+    EThumbnailType(byte val) {
+        for (EThumbnailType b : values()) {
             if (b.value == val) {
                 value = val;
                 return;
             }
         }
         unknown_value = val;
-        value = (byte) 0x00;
+        value = (byte) 0x9;
     }
 
     public Byte v() { return value; }
 
-    public static ELinkType parse(byte val) {
-        ELinkType ret = None;
-        for (ELinkType b : values()) {
+    public static EThumbnailType parse(byte val) {
+        EThumbnailType ret = Unknown;
+        for (EThumbnailType b : values()) {
             if (b.value == val) {
                 ret.value = val;
                 return ret;

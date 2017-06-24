@@ -1,29 +1,27 @@
-package mtcore.parser.message;
+package mtcore.parser.metadata;
 
-public enum ELinkType {
-    Reply((byte) 0x69),
-    Attachment((byte) 0x70),
-    None((byte) 0x00);
+public enum ESoundType {
+    Audio((byte) 0x91), Voice((byte) 0x92), Unknown ((byte) 0x99);
 
     byte unknown_value;
     byte value;
 
-    ELinkType(byte val) {
-        for (ELinkType b : values()) {
+    ESoundType(byte val) {
+        for (ESoundType b : values()) {
             if (b.value == val) {
                 value = val;
                 return;
             }
         }
         unknown_value = val;
-        value = (byte) 0x00;
+        value = (byte) 0x99;
     }
 
     public Byte v() { return value; }
 
-    public static ELinkType parse(byte val) {
-        ELinkType ret = None;
-        for (ELinkType b : values()) {
+    public static ESoundType parse(byte val) {
+        ESoundType ret = Unknown;
+        for (ESoundType b : values()) {
             if (b.value == val) {
                 ret.value = val;
                 return ret;
