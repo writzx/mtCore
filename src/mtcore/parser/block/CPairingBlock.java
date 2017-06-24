@@ -10,7 +10,7 @@ public class CPairingBlock extends CBlock {
 
     @Override
     public int getLength() {
-        return super.getLength() + 2;
+        return super.getLength() + Short.BYTES;
     }
 
     private static CPairingBlock factory(EMethodType method) throws CorruptedBlockException {
@@ -111,7 +111,7 @@ public class CPairingBlock extends CBlock {
 
         @Override
         public int getLength() {
-            return super.getLength() + 2 + 2 + codeData.length + pubkeyData.length;
+            return super.getLength() + Short.BYTES + Short.BYTES + codeData.length + pubkeyData.length;
         }
     }
 }

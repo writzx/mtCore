@@ -27,7 +27,7 @@ public class CAuthorizationBlock extends CBlock {
 
     @Override
     public int getLength() {
-        return super.getLength() + 2;
+        return super.getLength() + Short.BYTES;
     }
 
     private static CAuthorizationBlock factory(EMethodType method) throws CorruptedBlockException {

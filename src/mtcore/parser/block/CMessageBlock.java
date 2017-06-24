@@ -6,22 +6,23 @@ import mtcore.parser.message.CMessage;
 import java.nio.ByteBuffer;
 
 public class CMessageBlock extends CBlock {
-    short messageLength;
-    CMessage message;
+    short messageBlockLength;
+
+    CMessage messageBlock;
     @Override
     public void read(ByteBuffer bfr) throws CorruptedBlockException {
         super.read(bfr);
-        messageLength = bfr.getShort();
-        if (messageLength > Constants.MAX_DATA_LENGTH || messageLength > bfr.remaining()) {
-            throw new CorruptedBlockException(method, messageLength);
+        messageBlockLength = bfr.getShort();
+        if (messageBlockLength > Constants.MAX_DATA_LENGTH || messageBlockLength > bfr.remaining()) {
+            throw new CorruptedBlockException(method, messageBlockLength);
         }
-        message.read(bfr);
+        messageBlock.read(bfr);
     }
 
     @Override
     public void write(ByteBuffer bfr) throws CorruptedBlockException {
-        messageLength = (short) message.getLength();
-        if (messageLength > Constants.MAX_DATA_LENGTH || messageLength > bfr.remaining()) {
+        messageBlockLength = (short) messageBlock.getLength();
+        if (messageBlockLength > Constants.MAX_DATA_LENGTH || messageBlockLength > bfr.remaining()) {
             throw new CorruptedBlockException();
         }
         super.write(bfr);
@@ -29,6 +30,6 @@ public class CMessageBlock extends CBlock {
 
     @Override
     public int getLength() {
-        return super.getLength() + 2 + message.getLength();
+        return super.getLength() + Short.BYTES + messageBlock.getLength();
     }
 }

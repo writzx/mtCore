@@ -31,6 +31,6 @@ public class CDataBlock extends CBlock {
 
     @Override
     public int getLength() {
-        return super.getLength() + 2 + data.length;
+        return super.getLength() + Short.BYTES + data.length;
     }
 }

@@ -12,7 +12,7 @@ public abstract class CBlock implements IAbstractStructure {
 
     @Override
     public int getLength() {
-        return 1 + 1 + id.getLength() + 2;
+        return Byte.BYTES + Byte.BYTES + id.getLength() + Short.BYTES;
     }
 
     @Override
