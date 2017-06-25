@@ -27,6 +27,7 @@ public class CMessage implements IAbstractStructure {
     public void write(ByteBuffer bfr) throws UnknownBlockException, CorruptedBlockException {
         link.write(bfr);
         bfr.putLong(timestamp);
+        messageLength = (short) message.length;
         bfr.putShort(messageLength);
         bfr.put(message);
     }
@@ -34,10 +35,5 @@ public class CMessage implements IAbstractStructure {
     @Override
     public int getLength() {
         return Byte.BYTES + link.getLength() + Long.BYTES + Short.BYTES + message.length;
-    }
-
-    @Override
-    public int getMaxDataLength() {
-        return Constants.MAX_DATA_LENGTH - (Byte.BYTES + link.getLength() + Long.BYTES + Short.BYTES);
     }
 }

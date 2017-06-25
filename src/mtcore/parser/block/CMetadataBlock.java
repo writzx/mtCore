@@ -24,8 +24,4 @@ public class CMetadataBlock extends CBlock {
         return super.getLength() + Short.BYTES + metadata.getLength();
     }
 
-    @Override
-    public int getMaxDataLength() {
-        return 0;
-    }
 }

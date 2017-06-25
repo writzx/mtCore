@@ -9,5 +9,4 @@ public interface IAbstractStructure {
     void read(ByteBuffer bfr) throws UnknownBlockException, CorruptedBlockException;
     void write(ByteBuffer bfr) throws UnknownBlockException, CorruptedBlockException;
     int getLength();
-    int getMaxDataLength();
 }

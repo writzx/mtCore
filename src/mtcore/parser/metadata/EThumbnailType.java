@@ -1,7 +1,7 @@
 package mtcore.parser.metadata;
 
 public enum EThumbnailType {
-    Video((byte) 0x1), Image((byte) 0x2), Document((byte) 0x3), Unknown ((byte) 0x9);
+    Video((byte) 0x1), Animated ((byte) 0x2), Image((byte) 0x3), Document((byte) 0x4), Unknown ((byte) 0x9);
 
     byte unknown_value;
     byte value;

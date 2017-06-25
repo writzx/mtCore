@@ -1,6 +1,7 @@
 package mtcore.parser.block;
 
 import mtcore.parser.IAbstractStructure;
+import sun.reflect.generics.reflectiveObjects.NotImplementedException;
 
 import java.nio.ByteBuffer;
 

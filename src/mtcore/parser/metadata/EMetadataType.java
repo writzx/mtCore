@@ -4,7 +4,8 @@ public enum EMetadataType {
     Thumbnail((byte) 0x1F),
     Sound((byte) 0x4F),
     File((byte) 0x5F),
-    Directory((byte) 0x6F), // planned
+    Application((byte) 0x6F), // planned
+    Directory((byte) 0x8F), // planned
     Multipart((byte) 0x9F);
 
     byte unknown_value;

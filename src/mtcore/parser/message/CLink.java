@@ -28,9 +28,4 @@ public class CLink implements IAbstractStructure {
     public int getLength() {
         return Byte.BYTES + linkedBlockID.getLength();
     }
-
-    @Override
-    public int getMaxDataLength() {
-        return Byte.BYTES + linkedBlockID.getMaxDataLength();
-    }
 }
