@@ -1,7 +1,6 @@
 package mtcore.parser.block;
 
 import mtcore.parser.IAbstractStructure;
-import sun.reflect.generics.reflectiveObjects.NotImplementedException;
 
 import java.nio.ByteBuffer;
 
@@ -40,7 +39,7 @@ public abstract class CBlock implements IAbstractStructure {
             case Message: return new CMessageBlock();
             case Metadata: return new CMetadataBlock();
             case Data: return new CDataBlock();
-            case Information: return new CInformationBlock();
+            case Log: return new CLogBlock();
             case Unknown: default: throw new UnknownBlockException("Unknown block", bType); // handle this in code
         }
     }

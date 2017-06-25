@@ -7,7 +7,7 @@ import java.nio.ByteBuffer;
 
 public class CMessageBlock extends CBlock {
     short messageBlockLength;
-    CMessage messageBlock;
+    CMessage message;
 
     @Override
     public void read(ByteBuffer bfr) throws CorruptedBlockException {
@@ -16,21 +16,23 @@ public class CMessageBlock extends CBlock {
         if (messageBlockLength > Constants.MAX_DATA_LENGTH || messageBlockLength > bfr.remaining()) {
             throw new CorruptedBlockException(method, messageBlockLength);
         }
-        messageBlock = new CMessage();
-        messageBlock.read(bfr);
+        message = new CMessage();
+        message.read(bfr);
     }
 
     @Override
     public void write(ByteBuffer bfr) throws CorruptedBlockException {
-        messageBlockLength = (short) messageBlock.getLength();
+        messageBlockLength = (short) message.getLength();
         if (messageBlockLength > Constants.MAX_DATA_LENGTH || messageBlockLength > bfr.remaining()) {
             throw new CorruptedBlockException();
         }
         super.write(bfr);
+        bfr.putShort(messageBlockLength);
+        message.write(bfr);
     }
 
     @Override
     public int getLength() {
-        return super.getLength() + Short.BYTES + messageBlock.getLength();
+        return super.getLength() + Short.BYTES + message.getLength();
     }
 }

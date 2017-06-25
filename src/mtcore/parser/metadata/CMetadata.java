@@ -23,4 +23,20 @@ public abstract class CMetadata implements IAbstractStructure {
     public int getLength() {
         return Byte.BYTES;
     }
+
+    public static CMetadata factory(ByteBuffer bfr) {
+        bfr.mark();
+        byte b = bfr.get();
+        bfr.reset();
+        return factory(EMetadataType.parse(b));
+    }
+
+    private static CMetadata factory(EMetadataType meType) {
+        switch (meType) {
+            case Thumbnail: return new CThumbnailMetadata();
+            case Sound: return new CSoundMetadata();
+            case Multipart: return new CMultipartMetadata();
+            case File: default: return new CFileMetadata();
+        }
+    }
 }

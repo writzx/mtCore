@@ -6,7 +6,7 @@ public enum EBlockType {
     Message((byte) 0xCC),
     Metadata((byte) 0xDD),
     Data((byte) 0xDD),
-    Information ((byte) 0xEE),
+    Log((byte) 0xEE),
     Unknown((byte) 0xFF);
 
     byte unknown_value;

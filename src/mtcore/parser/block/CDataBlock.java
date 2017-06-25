@@ -27,6 +27,7 @@ public class CDataBlock extends CBlock {
         }
         super.write(bfr);
         bfr.putShort(dataLength);
+        bfr.put(data);
     }
 
     @Override
