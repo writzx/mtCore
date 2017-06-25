@@ -17,7 +17,7 @@ public enum ESoundType {
         value = (byte) 0x99;
     }
 
-    public Byte v() { return value; }
+    public byte v() { return value; }
 
     public static ESoundType parse(byte val) {
         ESoundType ret = Unknown;

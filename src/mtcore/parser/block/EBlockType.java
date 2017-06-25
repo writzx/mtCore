@@ -23,7 +23,7 @@ public enum EBlockType {
         value = (byte) 0xFF;
     }
 
-    public Byte v() { return value; }
+    public byte v() { return value; }
 
     public static EBlockType parse(byte val) {
         EBlockType ret = Unknown;

@@ -17,7 +17,7 @@ public enum EThumbnailType {
         value = (byte) 0x9;
     }
 
-    public Byte v() { return value; }
+    public byte v() { return value; }
 
     public static EThumbnailType parse(byte val) {
         EThumbnailType ret = Unknown;

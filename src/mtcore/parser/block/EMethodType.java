@@ -3,7 +3,7 @@ package mtcore.parser.block;
 public enum EMethodType {
     Request((byte) 0x55),
     Response((byte) 0x66),
-    Unknown((byte) 0x77);
+    Unknown((byte) 0x44);
 
     byte unknown_value;
     byte value;
@@ -16,10 +16,10 @@ public enum EMethodType {
             }
         }
         unknown_value = val;
-        value = (byte) 0xFF;
+        value = (byte) 0x44;
     }
 
-    public Byte v() { return value; }
+    public byte v() { return value; }
 
     public static EMethodType parse(byte val) {
         EMethodType ret = Unknown;

@@ -22,7 +22,7 @@ public enum EMetadataType {
         value = (byte) 0x9F;
     }
 
-    public Byte v() { return value; }
+    public byte v() { return value; }
 
     public static EMetadataType parse(byte val) {
         EMetadataType ret = File;

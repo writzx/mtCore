@@ -19,7 +19,7 @@ public enum ELinkType {
         value = (byte) 0x00;
     }
 
-    public Byte v() { return value; }
+    public byte v() { return value; }
 
     public static ELinkType parse(byte val) {
         ELinkType ret = None;
