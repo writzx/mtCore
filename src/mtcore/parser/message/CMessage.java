@@ -11,7 +11,7 @@ public class CMessage implements IAbstractStructure {
     CLink link; // linked block description
     long timestamp; // message send time
     short messageLength;
-    byte[] message;
+    byte[] message; // ****
 
     @Override
     public void read(ByteBuffer bfr) throws UnknownBlockException, CorruptedBlockException {

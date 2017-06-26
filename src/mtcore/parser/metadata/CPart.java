@@ -1,11 +1,13 @@
 package mtcore.parser.metadata;
 
+import mtcore.Constants;
 import mtcore.parser.IAbstractStructure;
 import mtcore.parser.block.CBlockID;
 import mtcore.parser.block.CorruptedBlockException;
 import mtcore.parser.block.UnknownBlockException;
 
 import java.nio.ByteBuffer;
+import java.util.Arrays;
 
 public class CPart implements IAbstractStructure {
     long offset;
@@ -29,6 +31,6 @@ public class CPart implements IAbstractStructure {
 
     @Override
     public int getLength() {
-        return Long.BYTES + Long.BYTES + partID.getLength();
+        return Long.BYTES + Short.BYTES + partID.getLength();
     }
 }

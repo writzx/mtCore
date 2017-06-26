@@ -8,7 +8,7 @@ public abstract class CBlock implements IAbstractStructure {
     public EBlockType blockType;
     public EMethodType method;
     public CBlockID id;
-    public short checksum;
+    public short checksum; // checksum of DECRYPTED DATA
 
     @Override
     public int getLength() {
@@ -47,7 +47,8 @@ public abstract class CBlock implements IAbstractStructure {
     public static CBlock factory(ByteBuffer bfr) throws UnknownBlockException, CorruptedBlockException {
         bfr.mark();
         byte b = bfr.get();
+        CBlock block = factory(bfr, EBlockType.parse(b));
         bfr.reset();
-        return factory(bfr, EBlockType.parse(b));
+        return block;
     }
 }

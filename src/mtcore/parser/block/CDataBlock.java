@@ -6,7 +6,7 @@ import java.nio.ByteBuffer;
 
 public class CDataBlock extends CBlock {
     short dataLength; // less than 0x2000
-    byte[] data; // length = dataLength
+    byte[] data; // length = dataLength ****
 
     @Override
     public void read(ByteBuffer bfr) throws CorruptedBlockException {

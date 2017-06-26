@@ -7,7 +7,7 @@ import java.nio.ByteBuffer;
 public class CLogBlock extends CBlock {
     short logLength;
     ELogType logType;
-    byte[] logData; // length is logLength - [length of logType (1 byte)]
+    byte[] logData; // length is logLength - [length of logType (1 byte)] ****
 
     @Override
     public void read(ByteBuffer bfr) throws CorruptedBlockException {

@@ -23,15 +23,13 @@ public class CPairingBlock extends CBlock {
     }
 
     public static CPairingBlock factory(ByteBuffer bfr) throws CorruptedBlockException {
-        bfr.mark();
-        byte b = bfr.get();
-        bfr.reset();
-        return factory(EMethodType.parse(b));
+        return factory(EMethodType.parse(bfr.get()));
     }
 
     @Override
     public void read(ByteBuffer bfr) throws CorruptedBlockException {
         super.read(bfr);
+        pairLength = bfr.getShort();
         if (pairLength > MAX_DATA_LENGTH || pairLength > bfr.remaining()) {
             throw new CorruptedBlockException(method, pairLength);
         }
@@ -47,7 +45,7 @@ public class CPairingBlock extends CBlock {
     }
 
     public static class CPairRequest extends CPairingBlock {
-        public byte[] pubkeyData; // encrypted with passcode which is to be obtained from remote user
+        public byte[] pubkeyData; // encrypted with passcode which is to be obtained from remote user ****
 
         @Override
         public void read(ByteBuffer bfr) throws CorruptedBlockException {
@@ -72,8 +70,8 @@ public class CPairingBlock extends CBlock {
     public static class CPairResponse extends CPairingBlock {
         public short codeLength;
         public short pubkeyLength;
-        public byte[] codeData;        // encrypted passcode
-        public byte[] pubkeyData;      // encrypted public key
+        public byte[] codeData;        // encrypted passcode ****
+        public byte[] pubkeyData;      // encrypted public key ****
 
         @Override
         public void read(ByteBuffer bfr) throws CorruptedBlockException {

@@ -1,6 +1,7 @@
 package mtcore.parser.block;
 
 import mtcore.Constants;
+import mtcore.parser.metadata.EMetadataType;
 
 import java.nio.ByteBuffer;
 
@@ -40,10 +41,7 @@ public class CAuthorizationBlock extends CBlock {
     }
 
     public static CAuthorizationBlock factory(ByteBuffer bfr) throws CorruptedBlockException {
-        bfr.mark();
-        byte b = bfr.get();
-        bfr.reset();
-        return factory(EMethodType.parse(b));
+        return factory(EMethodType.parse(bfr.get()));
     }
 
     public static class CAuthRequest extends CAuthorizationBlock {
@@ -70,7 +68,7 @@ public class CAuthorizationBlock extends CBlock {
     }
 
     public static class CAuthResponse extends CAuthorizationBlock {
-        public byte[] authData; // contains encrypted ip:port address (remove leading '/')
+        public byte[] authData; // contains AES256 key for the session encrypted with public key. **** selective
 
         @Override
         public void read(ByteBuffer bfr) throws CorruptedBlockException {
