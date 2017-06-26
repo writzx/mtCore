@@ -1,7 +1,7 @@
 package mtcore;
 
-import mtcore.security.AES;
 import org.bouncycastle.crypto.InvalidCipherTextException;
+import org.bouncycastle.crypto.engines.AESEngine;
 import org.bouncycastle.crypto.paddings.PKCS7Padding;
 import org.bouncycastle.jce.provider.BouncyCastleProvider;
 import org.bouncycastle.util.encoders.Hex;
@@ -52,37 +52,38 @@ public class mtCoreMain extends JFrame {
         setLocationByPlatform(true);
         setVisible(true);
 
+        System.out.println(new AESEngine().getBlockSize());
         //(new mtcore.IncomingSocketThread()).start();
 
         // generate("rsa_pub","rsa_priv");
-        KeyGenerator kg = null;
-        try {
-            kg = KeyGenerator.getInstance("AES");
-            kg.init(256);
-            SecretKey sk = kg.generateKey();
-
-            System.out.println(Hex.toHexString(sk.getEncoded()));
-
-            AES abc = new AES();
-            abc.setPadding(new PKCS7Padding());
-            abc.setKey(sk.getEncoded());
-            button.addActionListener(new ActionListener() {
-                @Override
-                public void actionPerformed(ActionEvent e) {
-                    byte[] ba = new byte[0];
-                    try {
-                        ba = input.getText().getBytes("UTF-8");
-                        byte[] encr = abc.encrypt(ba);
-                        output.setText(Hex.toHexString(encr));
-                        System.out.println(ba.length + " -> " + encr.length);
-                    } catch (UnsupportedEncodingException | InvalidCipherTextException e1) {
-                        e1.printStackTrace();
-                    }
-                }
-            });
-        } catch (NoSuchAlgorithmException e) {
-            e.printStackTrace();
-        }
+//        KeyGenerator kg = null;
+//        try {
+//            kg = KeyGenerator.getInstance("AES");
+//            kg.init(256);
+//            SecretKey sk = kg.generateKey();
+//
+//            System.out.println(Hex.toHexString(sk.getEncoded()));
+//
+//            AES abc = new AES();
+//            abc.setPadding(new PKCS7Padding());
+//            abc.setKey(sk.getEncoded());
+//            button.addActionListener(new ActionListener() {
+//                @Override
+//                public void actionPerformed(ActionEvent e) {
+//                    byte[] ba = new byte[0];
+//                    try {
+//                        ba = input.getText().getBytes("UTF-8");
+//                        byte[] encr = abc.encrypt(ba);
+//                        output.setText(Hex.toHexString(encr));
+//                        System.out.println(ba.length + " -> " + encr.length);
+//                    } catch (UnsupportedEncodingException | InvalidCipherTextException e1) {
+//                        e1.printStackTrace();
+//                    }
+//                }
+//            });
+//        } catch (NoSuchAlgorithmException e) {
+//            e.printStackTrace();
+//        }
     }
 
     private void generate (String publicKeyFilename, String privateFilename) {

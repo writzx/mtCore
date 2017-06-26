@@ -68,7 +68,7 @@ public class CAuthorizationBlock extends CBlock {
     }
 
     public static class CAuthResponse extends CAuthorizationBlock {
-        public byte[] authData; // contains AES256 key for the session encrypted with public key. **** selective
+        public byte[] authData; // contains AES key for the session encrypted with public key. **** selective
 
         @Override
         public void read(ByteBuffer bfr) throws CorruptedBlockException {

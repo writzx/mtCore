@@ -2,7 +2,7 @@ package mtcore.parser.block;
 
 import java.nio.ByteBuffer;
 
-import static mtcore.Constants.MAX_DATA_LENGTH;
+import mtcore.Constants;
 
 public class CPairingBlock extends CBlock {
     public short pairLength; // both request and response has to have correct length
@@ -30,14 +30,14 @@ public class CPairingBlock extends CBlock {
     public void read(ByteBuffer bfr) throws CorruptedBlockException {
         super.read(bfr);
         pairLength = bfr.getShort();
-        if (pairLength > MAX_DATA_LENGTH || pairLength > bfr.remaining()) {
+        if (pairLength > Constants.MAX_DATA_LENGTH || pairLength > bfr.remaining()) {
             throw new CorruptedBlockException(method, pairLength);
         }
     }
 
     @Override
     public void write(ByteBuffer bfr) throws CorruptedBlockException {
-        if (pairLength > MAX_DATA_LENGTH || pairLength > bfr.remaining()) {
+        if (pairLength > Constants.MAX_DATA_LENGTH || pairLength > bfr.remaining()) {
             throw new CorruptedBlockException(method, pairLength);
         }
         super.write(bfr);
@@ -79,7 +79,7 @@ public class CPairingBlock extends CBlock {
             codeLength = bfr.getShort();
             pubkeyLength = bfr.getShort();
             short tmpLen = (short) (codeLength + pubkeyLength + (2 * 2)); // two short length
-            if (tmpLen > pairLength && (tmpLen > MAX_DATA_LENGTH || tmpLen > bfr.remaining())) {
+            if (tmpLen > pairLength && (tmpLen > Constants.MAX_DATA_LENGTH || tmpLen > bfr.remaining())) {
                 throw new CorruptedBlockException(method, tmpLen);
             }
             codeData = new byte[codeLength];
