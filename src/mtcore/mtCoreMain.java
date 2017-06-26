@@ -123,7 +123,6 @@ public class mtCoreMain extends JFrame {
     }
 
     private static class FixedRand extends SecureRandom {
-
         MessageDigest sha;
         byte[] state;
 
@@ -137,7 +136,6 @@ public class mtCoreMain extends JFrame {
         }
 
         public void nextBytes(byte[] bytes) {
-
             int    off = 0;
 
             sha.update(state);
