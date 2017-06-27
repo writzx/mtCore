@@ -31,7 +31,7 @@ public abstract class CMetadata implements IAbstractStructure {
         return factory(EMetadataType.parse(b));
     }
 
-    private static CMetadata factory(EMetadataType meType) {
+    public static CMetadata factory(EMetadataType meType) {
         switch (meType) {
             case Thumbnail: return new CThumbnailMetadata();
             case Sound: return new CSoundMetadata();

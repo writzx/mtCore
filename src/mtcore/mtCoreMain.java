@@ -1,5 +1,9 @@
 package mtcore;
 
+import mtcore.parser.metadata.CFileMetadata;
+import mtcore.parser.metadata.CMetadata;
+import mtcore.parser.metadata.CSoundMetadata;
+import mtcore.security.Decrypt;
 import org.bouncycastle.crypto.InvalidCipherTextException;
 import org.bouncycastle.crypto.engines.AESEngine;
 import org.bouncycastle.crypto.paddings.PKCS7Padding;
@@ -10,6 +14,7 @@ import sun.misc.BASE64Encoder;
 import javax.crypto.KeyGenerator;
 import javax.crypto.SecretKey;
 import javax.swing.*;
+import java.awt.color.CMMException;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.io.BufferedWriter;
@@ -87,7 +92,6 @@ public class mtCoreMain extends JFrame {
     }
 
     private void generate (String publicKeyFilename, String privateFilename) {
-
         try {
 
             Security.addProvider(new BouncyCastleProvider());
